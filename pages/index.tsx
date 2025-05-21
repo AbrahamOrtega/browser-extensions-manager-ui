@@ -1,115 +1,112 @@
 import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import Filter from "@/components/Filter";
+import ExtensionCard from "@/components/ExtensionCard";
+import getData from "@/services/getData";
+import { useEffect } from "react";
+import { useState } from "react";
+import ExtensionModel from "@/models/ExtensionModel";
 
 export default function Home() {
+  const [extensions, setExtensions] = useState<ExtensionModel[]>([]);
+  const [extensionsFiltered, setExtensionsFiltered] = useState<
+    ExtensionModel[]
+  >([]);
+  const [filter, setFilter] = useState("all");
+  const [theme, setTheme] = useState("light");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    const systemPerfersDark = window.matchMedia(
+      "(prefers-color-schema: dark)"
+    ).matches;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else if (systemPerfersDark) {
+      setTheme("dark");
+    }
+  }, []);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    html.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getData();
+      setExtensions(data);
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (filter === "all") {
+      setExtensionsFiltered(extensions);
+    } else if (filter === "active") {
+      setExtensionsFiltered(extensions.filter((ext) => ext.isActive));
+    } else if (filter === "inactive") {
+      setExtensionsFiltered(extensions.filter((ext) => !ext.isActive));
+    }
+  }, [filter, extensions]);
+
+  const removeExtension = (name: string) => {
+    setExtensions((prevExtensions) =>
+      prevExtensions.filter((extension) => extension.name !== name)
+    );
+  };
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              pages/index.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="w-full min-h-screen px-24 py-12 flex flex-col gap-16">
+      <div className="flex w-full justify-between p-3 shadow-lg dark:bg-neutral-800 bg-neutral-0 rounded-2xl">
+        <div className="flex gap-3">
+          <Image
+            src="images/logo.svg"
+            alt="Logo"
+            width={40}
+            height={32}
+            className="object-cover object-left overflow-hidden"
+          />
+          <h1 className="text-[24px] font-[700]">Extensions</h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+        <button
+          className="bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-700 p-2 rounded-lg cursor-pointer dark:hover:bg-neutral-600
+        focus:outline-none focus:ring-2 focus:ring-red-400"
+          onClick={toggleTheme}
         >
           <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+            src={
+              theme === "light" ? "images/icon-moon.svg" : "images/icon-sun.svg"
+            }
+            alt="icon"
+            width={24}
+            height={24}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <Filter filter={filter} setFilter={setFilter} />
+
+        <div className="grid grid-flow-row grid-cols-1 md:grid-cols-2  lg:grid-cols-3 gap-3">
+          {extensionsFiltered.map((extension) => (
+            <ExtensionCard
+              key={extension.name}
+              logo={extension.logo}
+              name={extension.name}
+              description={extension.description}
+              isActive={extension.isActive}
+              removeExtension={removeExtension}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
